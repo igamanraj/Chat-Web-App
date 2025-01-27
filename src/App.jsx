@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import './App.css'; // Separate CSS for better control
 
-const socket = io('http://localhost:9000'); // Connect to backend
+const socket = io('https://chat-app-backend-yl0w.onrender.com/'); // Connect to backend
 
 const App = () => {
   const [messages, setMessages] = useState([]);
@@ -73,7 +73,7 @@ const App = () => {
   };
 
   return (
-    <div className={`${darkMode ? "bg-gray-900 text-white" : "bg-gray-100 text-white"} h-screen flex flex-col`}>
+    <div className={`${darkMode ? "bg-gray-900 text-white" : "bg-gray-500 text-white"} h-screen flex flex-col`}>
       <header className="flex items-center justify-between p-4 bg-gray-800 dark:bg-gray-800">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8">
@@ -81,7 +81,7 @@ const App = () => {
           </div>
           <h1 className="text-xl font-bold">Chat App</h1>
         </div>
-        <button onClick={toggleDarkMode} className="rounded-full p-2 bg-gray-700 dark:bg-gray-800 text-white dark:text-black">
+        <button onClick={toggleDarkMode} className="rounded-full p-2 bg-gray-700 dark:bg-gray-800 text-white dark:text-black hover:cursor-pointer">
           {darkMode ? "🌙" : "☀️"}
         </button>
       </header>
@@ -108,7 +108,7 @@ const App = () => {
       <footer className="flex items-center p-4 bg-gray-800 dark:bg-gray-800">
         <button
           onClick={handleSkipUser}
-          className="px-4 py-2 mr-2 bg-red-600 text-white rounded"
+          className="px-4 py-2 mr-2 bg-red-600 text-white rounded hover:bg-red-700 cursor-pointer"
         >
           {isSkipConfirm ? 'Confirm' : 'Skip'}
         </button>
@@ -123,7 +123,7 @@ const App = () => {
         />
         <button
           onClick={sendMessage}
-          className="px-4 py-2 bg-blue-600 text-white rounded cursor-pointer"
+          className="px-4 py-2 bg-blue-600 text-white rounded cursor-pointer hover:bg-blue-700"
         >
           Send
         </button>
