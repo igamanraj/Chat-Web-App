@@ -77,7 +77,7 @@ const App = () => {
       <header className="flex items-center justify-between p-4 bg-gray-800 dark:bg-gray-800">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8">
-            <img src="./src/assets/chat.png" alt="Chat Logo"/>
+            <img src="/assets/chat.png" alt="Chat Logo"/>
           </div>
           <h1 className="text-xl font-bold">Chat App</h1>
         </div>
