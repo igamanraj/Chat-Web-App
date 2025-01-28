@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import './App.css'; // Separate CSS for better control
+import chatLogo from './assets/chat.png'; 
 
-const socket = io('https://chat-app-backend-yl0w.onrender.com/'); // Connect to backend
+const socket = io('https://chat-app-backend-smpd.onrender.com'); // Connect to backend
 
 const App = () => {
   const [messages, setMessages] = useState([]);
@@ -77,7 +78,7 @@ const App = () => {
       <header className="flex items-center justify-between p-4 bg-gray-800 dark:bg-gray-800">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8">
-            <img src="/assets/chat.png" alt="Chat Logo"/>
+            <img src={chatLogo} alt="Chat Logo"/>
           </div>
           <h1 className="text-xl font-bold">Chat App</h1>
         </div>
