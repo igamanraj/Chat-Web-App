@@ -41,7 +41,7 @@ const NotEligible = () => {
 
         <button
           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-transform transform hover:scale-105"
-          onClick={() => navigate("/")}
+          onClick={() => {navigate("/"), navigate(0)}}
         >
           Go Back
         </button>
