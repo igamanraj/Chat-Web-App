@@ -1,8 +1,10 @@
-
 main {
   display: flex;
   flex-direction: column;
   scrollbar-width: none;
+  padding-bottom: 80px; /* Add padding to prevent messages from hiding behind footer */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
 }
 
 .my-message {
@@ -11,14 +13,128 @@ main {
   align-self: flex-end; /* Align to the right */
   padding: 8px 12px;
   border-radius: 12px;
-  max-width: 60%;
+  max-width: 85%; /* Increased from 60% for better mobile view */
   margin-bottom: 8px;
+  word-wrap: break-word; /* Enable word wrapping */
+  overflow-wrap: break-word; /* Modern browsers */
+  hyphens: auto; /* Enable hyphenation */
 }
 .other-message {
-  color: #000000; /* Black text */
+  color: #ffffff; /* white text */
   align-self: flex-start; /* Align to the left */
   padding: 8px 12px;
   border-radius: 12px;
-  max-width: 60%;
+  max-width: 85%; /* Increased from 60% for better mobile view */
   margin-bottom: 8px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Loading state container */
+.flex.items-center.justify-center.gap-3 {
+  display: flex;
+  align-items: center;
+  margin: 1rem auto;
+  max-width: 600px;
+}
+
+/* Loading text alignment */
+.flex.items-center.justify-center.gap-3 p {
+  text-align: left;
+  margin: 0;
+}
+
+/* Mobile adjustments */
+@media (max-width: 640px) {
+  .flex.items-center.justify-center.gap-3 {
+    padding: 0 1rem;
+  }
+}
+
+.message-link {
+  color: #007bff;
+  text-decoration: underline;
+  word-break: break-all;
+}
+
+.message-link:hover {
+  color: #0056b6;
+}
+
+.message-link-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+}
+
+.message-link {
+  color: #2196f3;
+  word-break: break-all;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  margin-bottom: 4px;
+  display: inline-block;
+  max-width: 100%;
+}
+
+.my-message .message-link {
+  color: #90caf9;
+}
+
+/* Message text container */
+.message-text {
+  width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+/* Responsive adjustments */
+@media (min-width: 768px) {
+  .my-message,
+  .other-message {
+    max-width: 60%; /* Return to original width on desktop */
+  }
+}
+
+/* Link preview container adjustments */
+.link-preview {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Ensure images don't overflow */
+.message img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Image preview loading overlay */
+.relative .absolute.inset-0 {
+  border-radius: 0.375rem; /* matches rounded-md */
+  transition: all 0.2s ease;
+}
+
+.relative:hover .absolute.inset-0 {
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+/* Ensure loader is centered */
+.relative .absolute.inset-0.flex {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Ensure footer stays on top */
+footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50; /* Ensure footer stays above content */
+  background-color: #1f2937; /* Match your dark theme */
 }
