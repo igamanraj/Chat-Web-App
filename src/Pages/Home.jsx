@@ -11,7 +11,7 @@ import LinkPreview from '../assets/components/LinkPreview/LinkPreview';
 import { ClipLoader } from "react-spinners";
 
 
-const socket = io("http://localhost:9000");
+const socket = io("https://chat-app-backend-smpd.onrender.com");
 
 const Home = () => {
   const [messages, setMessages] = useState([]);
