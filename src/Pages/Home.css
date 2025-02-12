@@ -138,3 +138,107 @@ footer {
   z-index: 50; /* Ensure footer stays above content */
   background-color: #1f2937; /* Match your dark theme */
 }
+
+.message {
+  position: relative;
+  padding: 8px 12px;
+  border-radius: 10px;
+  max-width: 70%;
+  margin-bottom: 24px;  /* Increase bottom margin to make room for reactions */
+}
+
+
+/* Add specific positioning for sent messages */
+.my-message .reaction-picker {
+  right: 29px;  /* Position from right instead of left for sent messages */
+  left: auto;   /* Reset left positioning */
+}
+
+.reaction-emoji {
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 30px;
+  transition: background-color 0.2s;
+}
+
+.reaction-emoji:hover {
+  background-color: #4a5568;
+  border-radius: 30px;
+}
+
+.reaction-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px;
+  border-radius: 12px;
+  font-size: 0.9em;
+  background-color: #2d3748;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  margin-right: 4px;
+}
+
+
+.reaction-count {
+  font-size: 0.8em;
+  margin-left: 2px;
+}
+
+.reactions-display {
+  position: absolute;
+  bottom: -24px;
+  left: 4px;
+  display: flex;
+  gap: 4px;
+  z-index: 10;
+}
+
+/* Adjust for sent messages */
+.my-message .reactions-display {
+  right: 4px;
+  left: auto;
+}
+
+/* Base reaction picker styles */
+.reaction-picker {
+  position: absolute;
+  bottom: -52%;
+  left: 29px;
+  border-radius: 30px;
+  padding: 5px;
+  display: flex;
+  gap: 2px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  
+}
+
+/* Specific positioning for image messages */
+.message.has-image .reaction-picker {
+  bottom: -10px;
+}
+
+/* Position for received image messages */
+.other-message.has-image .reaction-picker {
+  left: 5;
+}
+
+/* Position for sent image messages */
+.my-message.has-image .reaction-picker {
+  right: 25px;
+  left: auto;
+}
+
+/* Keep existing text message positioning */
+.my-message:not(.has-image) .reaction-picker {
+  right: 29px;
+  left: auto;
+}
+
+.other-message:not(.has-image) .reaction-picker {
+  left: 29px;
+}
+.message.has-image{
+  background: none;
+}
