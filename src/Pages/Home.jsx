@@ -13,7 +13,7 @@ import EmojiPicker from "../assets/components/EmojiPicker/Emoji";
 import GifPicker from "../assets/components/GIFPicker/GIF";
 
 
-const socket = io(import.meta.env.VITE_BACKEND_URL);
+const socket = io("https://chat-app-backend-smpd.onrender.com");
 
 const Home = () => {
   const [messages, setMessages] = useState([]);
