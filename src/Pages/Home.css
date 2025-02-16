@@ -242,3 +242,100 @@ footer {
 .message.has-image{
   background: none;
 }
+
+/* Emoji picker styles */
+.emoji-picker-button {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.emoji-picker-button:hover {
+  color: #9ca3af;
+}
+
+.emoji-picker-popup {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 8px;
+  background-color: #1f2937;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 50;
+}
+
+.emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  padding: 8px;
+}
+
+.emoji-item {
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  text-align: center;
+  transition: background-color 0.2s;
+}
+
+.emoji-item:hover {
+  background-color: #374151;
+}
+
+/* Emoji picker container */
+.em-emoji-picker {
+  --background-rgb: 31, 41, 55 !important;
+  --border-radius: 8px !important;
+  --category-icon-size: 20px !important;
+  --font-size: 14px !important;
+  --rgb-accent: 59, 130, 246 !important;
+  --rgb-background: 31, 41, 55 !important;
+  --rgb-color: 255, 255, 255 !important;
+  --rgb-input: 55, 65, 81 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Hide emoji picker when clicking outside */
+.emoji-picker-container {
+  position: relative;
+}
+
+/* GIF Picker Styles */
+.giphy-grid {
+  background-color: transparent !important;
+}
+
+.giphy-gif {
+  cursor: pointer;
+  transition: transform 0.2s;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.giphy-gif:hover {
+  transform: scale(1.05);
+}
+
+/* Custom Scrollbar for GIF picker */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: #4b5563;
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: #6b7280;
+}
+

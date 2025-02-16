@@ -11,7 +11,7 @@ const AgeVerification = () => {
 
   return (
     isOpen && (
-      <div className="fixed inset-0 flex items-center justify-center bg-opacity-60 z-50 backdrop-blur-sm">
+      <div className="fixed inset-0 flex items-center justify-center bg-opacity-60 z-50 backdrop-blur-md">
         <div className="text-white p-6 rounded-2xl shadow-lg w-96 text-center relative border border-gray-600">
           <button className="absolute top-2 right-3 text-2xl text-gray-300 hover:text-white" onClick={handleClose}>
             &times;

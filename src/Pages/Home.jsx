@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
-import "../Pages/Home.css";
-import chatLogo from "../assets/chat.png";
-import AgeVerification from "../assets/components/AgeVerification";
 import { IoImageOutline } from "react-icons/io5";
-
 import { VscChromeClose } from "react-icons/vsc";
 import { Tooltip } from "react-tooltip";
+import { BarLoader } from "react-spinners";
+import "../Pages/Home.css";
+import AgeVerification from "../assets/components/AgeVerification";
+import chatLogo from "../assets/chat.png";
 import BounceLoader from "react-spinners/BounceLoader";
 import LinkPreview from "../assets/components/LinkPreview/LinkPreview";
-import { BarLoader } from "react-spinners";
+import EmojiPicker from "../assets/components/EmojiPicker/Emoji";
+import GifPicker from "../assets/components/GIFPicker/GIF";
 
-const socket = io("https://chat-app-backend-smpd.onrender.com");
+
+const socket = io(import.meta.env.VITE_BACKEND_URL);
 
 const Home = () => {
   const [messages, setMessages] = useState([]);
@@ -24,6 +26,7 @@ const Home = () => {
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef(null);
   const [userId] = useState(() => Math.random().toString(36).substr(2, 9));
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   useEffect(() => {
     socket.on("partnerFound", () => {
@@ -32,22 +35,17 @@ const Home = () => {
     });
 
     socket.on("message", (msg) => {
-      // Check if msg is an object with text property
-      const messageText = typeof msg === "object" ? msg.text : msg;
-      const messageId =
-        typeof msg === "object"
-          ? msg.messageId
-          : Math.random().toString(36).substr(2, 9);
+      const messageId = typeof msg === "object" 
+        ? msg.messageId 
+        : Math.random().toString(36).substr(2, 9);
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: messageId,
-          me: false,
-          text: messageText,
-          reactions: {},
-        },
-      ]);
+      setMessages((prev) => [...prev, {
+        id: messageId,
+        me: false,
+        text: msg.text || null,
+        gif: msg.gif || null,
+        reactions: {}
+      }]);
     });
     socket.on("receiveImage", (imageUrl) => {
       setMessages((prev) => [...prev, { me: false, image: imageUrl }]);
@@ -224,11 +222,16 @@ const Home = () => {
     const handleClickOutside = () => {
       setShowReactions(false);
     };
+    const handleEmojiSelect = (emoji) => {
+      setMessage((prev) => prev + emoji.native);
+    };
+  
 
     useEffect(() => {
       document.addEventListener("click", handleClickOutside);
       return () => document.removeEventListener("click", handleClickOutside);
     }, []);
+    
 
     return (
       <div
@@ -236,10 +239,10 @@ const Home = () => {
           message.me
             ? message.text
               ? "my-message bg-blue-600 text-white self-end"
-              : "my-message has-image self-end"
+              : "self-end"
             : message.text
             ? "other-message bg-gray-700 text-white self-start"
-            : "other-message has-image self-start"
+            : "self-start"
         }`}
         onContextMenu={handleContextMenu}
         onTouchStart={handleTouchStart}
@@ -256,6 +259,13 @@ const Home = () => {
               className="w-32 h-auto rounded-md"
             />
           )}
+          {message.gif && (
+            <img
+              src={message.gif}
+              alt="GIF"
+              className="w-48 h-auto rounded-md"
+            />
+          )}
         </div>
 
         {/* Updated Reactions display */}
@@ -264,7 +274,7 @@ const Home = () => {
             {Object.entries(message.reactions).map(([emoji, users]) => (
               <span
                 key={emoji}
-                className={`reaction-badge backdrop-blur-sm ${
+                className={`reaction-badge backdrop-blur-md ${
                   users.includes(userId) ? "my-reaction" : ""
                 }`}
                 title={`${users.length} ${
@@ -283,7 +293,7 @@ const Home = () => {
         {/* Reaction picker */}
         {showReactions && (
           <div
-            className="reaction-picker backdrop-blur-sm"
+            className="reaction-picker backdrop-blur-md"
             onClick={(e) => e.stopPropagation()}
           >
             {["👍", "❤️", "😂", "😮", "😢", "👎"].map((emoji) => (
@@ -293,7 +303,7 @@ const Home = () => {
                   handleReact(message.id, emoji);
                   setShowReactions(false);
                 }}
-                className="reaction-emoji  backdrop-blur-sm"
+                className="reaction-emoji  backdrop-blur-md"
               >
                 {emoji}
               </span>
@@ -351,6 +361,36 @@ const Home = () => {
       return newMessages;
     });
   };
+
+  const onEmojiSelect = (emoji) => {
+    setMessage(prev => prev + emoji.native);
+  };
+
+  const handleGifSelect = (gifUrl) => {
+    const newMessage = {
+      id: Math.random().toString(36).substr(2, 9),
+      me: true,
+      gif: gifUrl,  // Store gif URL separately
+      reactions: {}
+    };
+    socket.emit("message", { gif: gifUrl, messageId: newMessage.id });
+    setMessages(prev => [...prev, newMessage]);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        showEmojiPicker && 
+        !event.target.closest('.em-emoji-picker') && 
+        !event.target.closest('[data-tooltip-id="emoji-tooltip"]')
+      ) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showEmojiPicker]);
 
   return (
     <div
@@ -444,13 +484,20 @@ const Home = () => {
                 className="absolute left-2 top-1/2 -translate-y-1/2 cursor-pointer hover:text-gray-400 transition-colors"
                 data-tooltip-id="attach-tooltip"
               >
-                <IoImageOutline  size={22}/>
+                <IoImageOutline size={22} />
                 <Tooltip
                   id="attach-tooltip"
                   place="top"
                   content="Attach Images"
                 />
               </label>
+              
+              <GifPicker onGifSelect={handleGifSelect} />
+              <EmojiPicker 
+                onEmojiSelect={onEmojiSelect}
+                showPicker={showEmojiPicker}
+                togglePicker={() => setShowEmojiPicker(!showEmojiPicker)}
+              />
             </div>
 
             {selectedImage && (

@@ -4,4 +4,7 @@ export default defineConfig({
   plugins: [
     tailwindcss(),
   ],
+  optimizeDeps: {
+    include: ['@emoji-mart/react'],
+  },
 })
