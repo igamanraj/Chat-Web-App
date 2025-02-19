@@ -5,10 +5,11 @@ main {
   padding-bottom: 80px; /* Add padding to prevent messages from hiding behind footer */
   overflow-y: auto;
   -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  scroll-behavior: smooth; /* Smooth scrolling */
 }
 
 .my-message {
-  background-color: #2563eb; /* Blue color */
+   /* Blue color */
   color: #ffffff; /* White text */
   align-self: flex-end; /* Align to the right */
   padding: 8px 12px;

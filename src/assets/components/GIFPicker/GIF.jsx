@@ -9,7 +9,9 @@ const GifPicker = ({ onGifSelect }) => {
   const [showPicker, setShowPicker] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [error, setError] = useState(null);
-  const gf = new GiphyFetch("5u7XFd6vukoEzM51soNHG4miff6FmmS1");
+
+  const GIPHY_API_KEY = import.meta.env.VITE_REACT_GIPHY_API_KEY
+  const gf = new GiphyFetch(GIPHY_API_KEY);
 
   // Function to fetch GIFs based on search term
   const fetchGifs = async (offset) => {

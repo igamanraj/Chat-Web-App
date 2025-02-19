@@ -3,7 +3,7 @@ import { io } from "socket.io-client";
 import { IoImageOutline } from "react-icons/io5";
 import { VscChromeClose } from "react-icons/vsc";
 import { Tooltip } from "react-tooltip";
-import { BarLoader } from "react-spinners";
+import { ClipLoader } from "react-spinners";
 import "../Pages/Home.css";
 import AgeVerification from "../assets/components/AgeVerification";
 import chatLogo from "../assets/chat.png";
@@ -11,9 +11,10 @@ import BounceLoader from "react-spinners/BounceLoader";
 import LinkPreview from "../assets/components/LinkPreview/LinkPreview";
 import EmojiPicker from "../assets/components/EmojiPicker/Emoji";
 import GifPicker from "../assets/components/GIFPicker/GIF";
+import { BsCheck2, BsCheck2All } from "react-icons/bs";
 
-
-const socket = io("https://chat-app-backend-smpd.onrender.com");
+const BACKEND_URL = import.meta.env.VITE_REACT_BACKEND_URL;
+const socket = io(BACKEND_URL);
 
 const Home = () => {
   const [messages, setMessages] = useState([]);
@@ -35,20 +36,37 @@ const Home = () => {
     });
 
     socket.on("message", (msg) => {
-      const messageId = typeof msg === "object" 
-        ? msg.messageId 
-        : Math.random().toString(36).substr(2, 9);
+      const messageId =
+        typeof msg === "object"
+          ? msg.messageId
+          : Math.random().toString(36).substr(2, 9);
 
-      setMessages((prev) => [...prev, {
-        id: messageId,
-        me: false,
-        text: msg.text || null,
-        gif: msg.gif || null,
-        reactions: {}
-      }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: messageId,
+          me: false,
+          text: msg.text || null,
+          gif: msg.gif || null,
+          reactions: {},
+          status: "sent",
+        },
+      ]);
+      //Send an acknowledgment back that message was received
+      socket.emit("messageStatus", { messageId, status: "delivered" });
+
+      // Simulate "seen" after 2 seconds
+      setTimeout(() => {
+        socket.emit("messageSeen", { messageId, senderId: msg.senderId });
+      }, 500);
+    });
+    socket.on("messageStatus", ({ messageId, status }) => {
+      setMessages((prev) =>
+        prev.map((msg) => (msg.id === messageId ? { ...msg, status } : msg))
+      );
     });
     socket.on("receiveImage", (imageUrl) => {
-      setMessages((prev) => [...prev, { me: false, image: imageUrl }]);
+      setMessages((prev) => [...prev, { me: false, image: imageUrl, status: "delivered" }]);
     });
 
     socket.on("partnerDisconnected", () => {
@@ -98,6 +116,7 @@ const Home = () => {
       socket.off("receiveImage");
       socket.off("partnerDisconnected");
       socket.off("messageReaction");
+      socket.off("messageStatus");
     };
   }, []);
 
@@ -122,7 +141,7 @@ const Home = () => {
             console.log("Image sent successfully!");
             setMessages((prev) => [
               ...prev,
-              { me: true, image: selectedImage },
+              { me: true, image: selectedImage , status: "sent"},
             ]);
             setSelectedImage(null);
           } else {
@@ -138,10 +157,31 @@ const Home = () => {
         me: true,
         text: message,
         reactions: {},
+        status: "sent",
       };
       socket.emit("message", { text: message, messageId });
       setMessages((prev) => [...prev, newMessage]);
       setMessage("");
+    }
+  };
+
+  const getMessageStatusIcon = (me, status) => {
+    if (!me) return null;
+    switch (status) {
+      case "sent":
+        return (
+          <BsCheck2 className="text-gray-100 ml-3 mt-3 inline-block text-xs" />
+        );
+      case "delivered":
+        return (
+          <BsCheck2All className="text-gray-100 ml-3 mt-3 inline-block text-xs" />
+        );
+      case "seen":
+        return (
+          <BsCheck2All className="text-[#45add0] ml-3 mt-3 inline-block text-xs" />
+        );
+      default:
+        return null;
     }
   };
 
@@ -222,23 +262,18 @@ const Home = () => {
     const handleClickOutside = () => {
       setShowReactions(false);
     };
-    const handleEmojiSelect = (emoji) => {
-      setMessage((prev) => prev + emoji.native);
-    };
-  
 
     useEffect(() => {
       document.addEventListener("click", handleClickOutside);
       return () => document.removeEventListener("click", handleClickOutside);
     }, []);
-    
 
     return (
       <div
         className={`message ${
           message.me
             ? message.text
-              ? "my-message bg-blue-600 text-white self-end"
+              ? "my-message bg-[#005c4b] text-white self-end"
               : "self-end"
             : message.text
             ? "other-message bg-gray-700 text-white self-start"
@@ -252,6 +287,7 @@ const Home = () => {
           {message.text &&
             typeof message.text === "string" &&
             formatMessageWithLinks(message.text)}
+
           {message.image && (
             <img
               src={message.image}
@@ -266,6 +302,8 @@ const Home = () => {
               className="w-48 h-auto rounded-md"
             />
           )}
+          {/* ✅ Show Tick Marks for All Message Types */}
+        <span className="self-end mt-1">{getMessageStatusIcon(me.me, message.status)}</span>
         </div>
 
         {/* Updated Reactions display */}
@@ -363,33 +401,33 @@ const Home = () => {
   };
 
   const onEmojiSelect = (emoji) => {
-    setMessage(prev => prev + emoji.native);
+    setMessage((prev) => prev + emoji.native);
   };
 
   const handleGifSelect = (gifUrl) => {
     const newMessage = {
       id: Math.random().toString(36).substr(2, 9),
       me: true,
-      gif: gifUrl,  // Store gif URL separately
-      reactions: {}
+      gif: gifUrl, // Store gif URL separately
+      reactions: {},
     };
     socket.emit("message", { gif: gifUrl, messageId: newMessage.id });
-    setMessages(prev => [...prev, newMessage]);
+    setMessages((prev) => [...prev, newMessage]);
   };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
-        showEmojiPicker && 
-        !event.target.closest('.em-emoji-picker') && 
+        showEmojiPicker &&
+        !event.target.closest(".em-emoji-picker") &&
         !event.target.closest('[data-tooltip-id="emoji-tooltip"]')
       ) {
         setShowEmojiPicker(false);
       }
     };
 
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
   }, [showEmojiPicker]);
 
   return (
@@ -491,9 +529,9 @@ const Home = () => {
                   content="Attach Images"
                 />
               </label>
-              
+
               <GifPicker onGifSelect={handleGifSelect} />
-              <EmojiPicker 
+              <EmojiPicker
                 onEmojiSelect={onEmojiSelect}
                 showPicker={showEmojiPicker}
                 togglePicker={() => setShowEmojiPicker(!showEmojiPicker)}
@@ -504,7 +542,7 @@ const Home = () => {
               <div className="relative">
                 {isSending && (
                   <div className="absolute inset-0 flex items-center justify-center backdrop-blur-xs bg-opacity-50 rounded-md z-[1]">
-                    <BarLoader color="#1E2939"  height={3} width={53}/>
+                    <ClipLoader color="#d3cfcf" size={17} speedMultiplier={1} />
                   </div>
                 )}
                 <img
