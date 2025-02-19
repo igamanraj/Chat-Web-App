@@ -303,7 +303,7 @@ const Home = () => {
             />
           )}
           {/* ✅ Show Tick Marks for All Message Types */}
-        <span className="self-end mt-1">{getMessageStatusIcon(me.me, message.status)}</span>
+        <span className="self-end mt-1">{getMessageStatusIcon(message.me, message.status)}</span>
         </div>
 
         {/* Updated Reactions display */}
