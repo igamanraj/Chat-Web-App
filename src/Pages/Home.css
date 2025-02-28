@@ -350,3 +350,17 @@ footer {
   align-self: flex-end;
   margin-left: 5px;
 }
+.typing-indicator {
+  display: flex;
+  align-items: center;
+}
+
+.typing-indicator .dots {
+  display: inline-flex;
+}
+
+.typing-indicator .dot {
+  animation: typingDot 1.4s infinite;
+  opacity: 0;
+  margin-left: 2px;
+}

@@ -11,6 +11,7 @@ import BounceLoader from "react-spinners/BounceLoader";
 import LinkPreview from "../assets/components/LinkPreview/LinkPreview";
 import EmojiPicker from "../assets/components/EmojiPicker/Emoji";
 import GifPicker from "../assets/components/GIFPicker/GIF";
+import SyncLoader from "react-spinners/SyncLoader";
 
 // Backend connection configuration Sets up Socket.io connection to the backend server
 const BACKEND_URL = import.meta.env.VITE_REACT_BACKEND_URL;
@@ -31,6 +32,9 @@ const Home = () => {
   const [userId] = useState(() => Math.random().toString(36).substring(2, 9));
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [activeReactionMessageId, setActiveReactionMessageId] = useState(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [partnerTyping, setPartnerTyping] = useState(false);
+  const typingTimeoutRef = useRef(null);
 
   // Socket.io Event Handlers Setup listeners for real-time communication events
   useEffect(() => {
@@ -87,6 +91,11 @@ const Home = () => {
       setPartnerDisconnected(true);
     });
 
+    // In useEffect socket setup:
+    socket.on("partnerTyping", (typing) => {
+      setPartnerTyping(typing);
+    });
+
     // Handle messageReaction event
     socket.on(
       "messageReaction",
@@ -130,9 +139,46 @@ const Home = () => {
       socket.off("receiveImage");
       socket.off("partnerDisconnected");
       socket.off("messageReaction");
+      socket.off("partnerTyping");
     };
   }, []);
 
+  // Handle message input change
+  const handleMessageChange = (e) => {
+    setMessage(e.target.value);
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Only emit if not already typing
+    if (!isTyping) {
+      setIsTyping(true);
+      socket.emit("typing", true);
+    }
+    // Set timeout to stop typing indicator
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      socket.emit("typing", false);
+    }, 2000); // Stop showing typing indicator after 2 seconds of inactivity
+  };
+
+  // Add to your existing useEffect cleanup
+  useEffect(() => {
+    // Existing socket listeners...
+
+    // Cleanup function
+    return () => {
+      // Existing cleanup...
+      socket.off("partnerTyping");
+
+      // Clear typing timeout if component unmounts
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
   // Scroll to bottom of chat window
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -267,7 +313,7 @@ const Home = () => {
     const handleTouchStart = () => {
       timeoutId = setTimeout(() => {
         setActiveReactionMessageId(message.id);
-      } , 500);
+      }, 500);
     };
     // Clear timeout if touch ends
     const handleTouchEnd = () => {
@@ -459,7 +505,7 @@ const Home = () => {
         darkMode ? "bg-gray-900 text-white" : "bg-gray-500 text-white"
       } h-screen flex flex-col`}
     >
-      <header className="flex items-center justify-between p-4 bg-gray-800 dark:bg-gray-800">
+      <header className="flex items-center justify-between p-4 bg-gray-800 dark:bg-gray-800 static">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8">
             <img src={chatLogo} alt="Chat Logo" />
@@ -499,6 +545,11 @@ const Home = () => {
             </p>
           </div>
         )}
+        {connected && partnerTyping && (
+          <div className="other-message bg-gray-700 text-white self-start">
+            <SyncLoader color="#8f959e" size={3} speedMultiplier={0.5} />
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </main>
 
@@ -534,7 +585,7 @@ const Home = () => {
               <input
                 type="text"
                 value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                onChange={handleMessageChange}
                 onKeyDown={handleKeyDown}
                 placeholder="Type a message..."
                 disabled={!connected}
