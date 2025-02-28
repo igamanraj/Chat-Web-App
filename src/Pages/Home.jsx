@@ -1,20 +1,22 @@
 import React, { useState, useEffect, useRef } from "react";
+import "../Pages/Home.css";
 import { io } from "socket.io-client";
 import { IoImageOutline } from "react-icons/io5";
 import { VscChromeClose } from "react-icons/vsc";
 import { Tooltip } from "react-tooltip";
 import { ClipLoader } from "react-spinners";
-import "../Pages/Home.css";
 import AgeVerification from "../assets/components/AgeVerification";
 import chatLogo from "../assets/chat.png";
 import BounceLoader from "react-spinners/BounceLoader";
 import LinkPreview from "../assets/components/LinkPreview/LinkPreview";
 import EmojiPicker from "../assets/components/EmojiPicker/Emoji";
 import GifPicker from "../assets/components/GIFPicker/GIF";
-import { BsCheck2, BsCheck2All } from "react-icons/bs";
 
+// Backend connection configuration Sets up Socket.io connection to the backend server
 const BACKEND_URL = import.meta.env.VITE_REACT_BACKEND_URL;
 const socket = io(BACKEND_URL);
+
+//  State Management Core application state variables for chat functionality
 
 const Home = () => {
   const [messages, setMessages] = useState([]);
@@ -26,20 +28,24 @@ const Home = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef(null);
-  const [userId] = useState(() => Math.random().toString(36).substr(2, 9));
+  const [userId] = useState(() => Math.random().toString(36).substring(2, 9));
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [activeReactionMessageId, setActiveReactionMessageId] = useState(null);
 
+  // Socket.io Event Handlers Setup listeners for real-time communication events
   useEffect(() => {
+    //Handle partnerFound event
     socket.on("partnerFound", () => {
       setConnected(true);
       setPartnerDisconnected(false);
     });
 
+    // Handle message event
     socket.on("message", (msg) => {
       const messageId =
         typeof msg === "object"
           ? msg.messageId
-          : Math.random().toString(36).substr(2, 9);
+          : Math.random().toString(36).substring(2, 9);
 
       setMessages((prev) => [
         ...prev,
@@ -49,31 +55,39 @@ const Home = () => {
           text: msg.text || null,
           gif: msg.gif || null,
           reactions: {},
-          status: "sent",
+          timestamp: new Date().toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          }),
         },
       ]);
-      //Send an acknowledgment back that message was received
-      socket.emit("messageStatus", { messageId, status: "delivered" });
+    });
 
-      // Simulate "seen" after 2 seconds
-      setTimeout(() => {
-        socket.emit("messageSeen", { messageId, senderId: msg.senderId });
-      }, 500);
-    });
-    socket.on("messageStatus", ({ messageId, status }) => {
-      setMessages((prev) =>
-        prev.map((msg) => (msg.id === messageId ? { ...msg, status } : msg))
-      );
-    });
+    // Handle receiveImage event
     socket.on("receiveImage", (imageUrl) => {
-      setMessages((prev) => [...prev, { me: false, image: imageUrl, status: "delivered" }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          me: false,
+          image: imageUrl,
+          timestamp: new Date().toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          }),
+          reactions: {},
+        },
+      ]);
     });
 
+    // Handle partnerDisconnected event
     socket.on("partnerDisconnected", () => {
       setConnected(false);
       setPartnerDisconnected(true);
     });
 
+    // Handle messageReaction event
     socket.on(
       "messageReaction",
       ({ messageId, emoji, userId: reactingUserId, action }) => {
@@ -109,17 +123,17 @@ const Home = () => {
         });
       }
     );
-
+    // Cleanup function to remove event listeners
     return () => {
       socket.off("partnerFound");
       socket.off("message");
       socket.off("receiveImage");
       socket.off("partnerDisconnected");
       socket.off("messageReaction");
-      socket.off("messageStatus");
     };
   }, []);
 
+  // Scroll to bottom of chat window
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -131,33 +145,45 @@ const Home = () => {
   // Send a message to the server
   const sendMessage = () => {
     if (selectedImage) {
-      console.log("Sending image....");
+      console.log("🔃Sending image....");
       setIsSending(true);
 
       // Add delay before sending image
       setTimeout(() => {
         socket.emit("sendImage", selectedImage, (ack) => {
           if (ack) {
-            console.log("Image sent successfully!");
+            console.log("✅Image sent successfully!");
             setMessages((prev) => [
               ...prev,
-              { me: true, image: selectedImage , status: "sent"},
+              {
+                me: true,
+                image: selectedImage,
+                timestamp: new Date().toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: true,
+                }),
+              },
             ]);
             setSelectedImage(null);
           } else {
-            console.log("Image failed to send!");
+            console.log("❌Image failed to send!");
           }
           setIsSending(false);
         });
       }, 1000); // 1 seconds delay
     } else if (message.trim()) {
-      const messageId = Math.random().toString(36).substr(2, 9);
+      const messageId = Math.random().toString(36).substring(2, 9);
       const newMessage = {
         id: messageId,
         me: true,
+        timestamp: new Date().toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        }),
         text: message,
         reactions: {},
-        status: "sent",
       };
       socket.emit("message", { text: message, messageId });
       setMessages((prev) => [...prev, newMessage]);
@@ -165,32 +191,14 @@ const Home = () => {
     }
   };
 
-  const getMessageStatusIcon = (me, status) => {
-    if (!me) return null;
-    switch (status) {
-      case "sent":
-        return (
-          <BsCheck2 className="text-gray-100 ml-3 mt-3 inline-block text-xs" />
-        );
-      case "delivered":
-        return (
-          <BsCheck2All className="text-gray-100 ml-3 mt-3 inline-block text-xs" />
-        );
-      case "seen":
-        return (
-          <BsCheck2All className="text-[#45add0] ml-3 mt-3 inline-block text-xs" />
-        );
-      default:
-        return null;
-    }
-  };
-
+  // Handle Enter key press to send message
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
       sendMessage();
     }
   };
 
+  // Skip user or confirm skip
   const handleSkipUser = () => {
     if (isSkipConfirm) {
       socket.emit("disconnectFromPartner");
@@ -202,11 +210,12 @@ const Home = () => {
       setIsSkipConfirm(true);
     }
   };
-
+  // Toggle Dark Mode
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
   };
 
+  // Check if a string is a valid URL
   const isValidUrl = (string) => {
     try {
       new URL(string);
@@ -216,6 +225,7 @@ const Home = () => {
     }
   };
 
+  // Format message with clickable links
   const formatMessageWithLinks = (text) => {
     if (!text || typeof text !== "string") return text;
 
@@ -242,38 +252,45 @@ const Home = () => {
     });
   };
 
+  // Message Component
   const Message = ({ message }) => {
-    const [showReactions, setShowReactions] = useState(false);
+    const showReactions = activeReactionMessageId === message.id;
     let timeoutId;
-
+    // Handle right-click context menu for reactions
     const handleContextMenu = (e) => {
       e.preventDefault();
-      setShowReactions(true);
+      e.stopPropagation(); // Prevent bubbling to document click handler
+      // Close any open reaction picker first
+      setActiveReactionMessageId(message.id);
     };
-
+    // Handle touch events for mobile devices
     const handleTouchStart = () => {
-      timeoutId = setTimeout(() => setShowReactions(true), 500);
+      timeoutId = setTimeout(() => {
+        setActiveReactionMessageId(message.id);
+      } , 500);
     };
-
+    // Clear timeout if touch ends
     const handleTouchEnd = () => {
       clearTimeout(timeoutId);
     };
-
-    const handleClickOutside = () => {
-      setShowReactions(false);
-    };
-
+    // Add a click handler at the document level to close reaction picker when clicking outside
     useEffect(() => {
-      document.addEventListener("click", handleClickOutside);
-      return () => document.removeEventListener("click", handleClickOutside);
-    }, []);
+      const handleDocumentClick = () => {
+        if (activeReactionMessageId) {
+          setActiveReactionMessageId(null);
+        }
+      };
+
+      document.addEventListener("click", handleDocumentClick);
+      return () => document.removeEventListener("click", handleDocumentClick);
+    }, [activeReactionMessageId]);
 
     return (
       <div
         className={`message ${
           message.me
             ? message.text
-              ? "my-message bg-[#005c4b] text-white self-end"
+              ? "my-message bg-[#1E2939] text-white self-end"
               : "self-end"
             : message.text
             ? "other-message bg-gray-700 text-white self-start"
@@ -302,8 +319,7 @@ const Home = () => {
               className="w-48 h-auto rounded-md"
             />
           )}
-          {/* ✅ Show Tick Marks for All Message Types */}
-        <span className="self-end mt-1">{getMessageStatusIcon(message.me, message.status)}</span>
+          <span className="timestamp">{message.timestamp}</span>
         </div>
 
         {/* Updated Reactions display */}
@@ -339,7 +355,7 @@ const Home = () => {
                 key={emoji}
                 onClick={() => {
                   handleReact(message.id, emoji);
-                  setShowReactions(false);
+                  setActiveReactionMessageId(null);
                 }}
                 className="reaction-emoji  backdrop-blur-md"
               >
@@ -351,7 +367,7 @@ const Home = () => {
       </div>
     );
   };
-
+  // Handle reaction events
   const handleReact = (messageId, emoji) => {
     setMessages((prev) => {
       const newMessages = prev.map((msg) => {
@@ -400,21 +416,28 @@ const Home = () => {
     });
   };
 
+  // Emoji Picker
   const onEmojiSelect = (emoji) => {
     setMessage((prev) => prev + emoji.native);
   };
-
+  // GIF Picker
   const handleGifSelect = (gifUrl) => {
     const newMessage = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: Math.random().toString(36).substring(2, 9),
       me: true,
-      gif: gifUrl, // Store gif URL separately
+      gif: gifUrl,
       reactions: {},
+      timestamp: new Date().toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }),
     };
     socket.emit("message", { gif: gifUrl, messageId: newMessage.id });
     setMessages((prev) => [...prev, newMessage]);
   };
 
+  // Close Emoji Picker when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
