@@ -1,17 +1,20 @@
 import React, { useState, useEffect, useRef } from "react";
 import "../Pages/Home.css";
-import { io } from "socket.io-client";
-import { IoImageOutline } from "react-icons/io5";
-import { VscChromeClose } from "react-icons/vsc";
-import { Tooltip } from "react-tooltip";
-import { ClipLoader } from "react-spinners";
-import AgeVerification from "../assets/components/AgeVerification";
 import chatLogo from "../assets/chat.png";
+import AgeVerification from "../assets/components/AgeVerification";
 import BounceLoader from "react-spinners/BounceLoader";
 import LinkPreview from "../assets/components/LinkPreview/LinkPreview";
 import EmojiPicker from "../assets/components/EmojiPicker/Emoji";
 import GifPicker from "../assets/components/GIFPicker/GIF";
 import SyncLoader from "react-spinners/SyncLoader";
+import VoiceRecorder from "../assets/components/VoiceRecorder/VoiceRecorder";
+import { io } from "socket.io-client";
+import { IoImageOutline } from "react-icons/io5";
+import { VscChromeClose } from "react-icons/vsc";
+import { Tooltip } from "react-tooltip";
+import { ClipLoader } from "react-spinners";
+import { IoMoon } from "react-icons/io5";
+import { MdOutlineLightMode } from "react-icons/md";
 
 // Backend connection configuration Sets up Socket.io connection to the backend server
 const BACKEND_URL = import.meta.env.VITE_REACT_BACKEND_URL;
@@ -365,6 +368,7 @@ const Home = () => {
               className="w-48 h-auto rounded-md"
             />
           )}
+
           <span className="timestamp">{message.timestamp}</span>
         </div>
 
@@ -499,6 +503,33 @@ const Home = () => {
     return () => document.removeEventListener("click", handleClickOutside);
   }, [showEmojiPicker]);
 
+  // Paste image from clipboard
+  useEffect(() => {
+    const handlePaste = (event) => {
+      const activeElement = document.activeElement;
+      if (activeElement && activeElement.tagName === "INPUT") {
+        const items = (event.clipboardData || event.originalEvent.clipboardData)
+          .items;
+        for (let item of items) {
+          if (item.type.indexOf("image") !== -1) {
+            const file = item.getAsFile();
+            const reader = new FileReader();
+            reader.onload = (e) => setSelectedImage(e.target.result);
+            reader.readAsDataURL(file);
+          }
+        }
+      }
+    };
+
+    document.addEventListener("paste", handlePaste);
+    return () => document.removeEventListener("paste", handlePaste);
+  }, []);
+
+  // Function to handle voice message received
+  const handleVoiceMessage = (audioUrl) => {
+    setMessages((prev) => [...prev, { me: true, audio: audioUrl }]);
+  };
+
   return (
     <div
       className={`${
@@ -517,7 +548,11 @@ const Home = () => {
           className="rounded-full p-2 bg-gray-700 dark:bg-gray-800 text-white dark:text-black hover:cursor-pointer"
           data-tooltip-id="darkmode-tooltip"
         >
-          {darkMode ? "🌙" : "☀️"}
+          {darkMode ? (
+            <IoMoon className="text-white" />
+          ) : (
+            <MdOutlineLightMode className="text-white" />
+          )}
           <Tooltip
             id="darkmode-tooltip"
             place="bottom"
@@ -603,7 +638,6 @@ const Home = () => {
                   content="Attach Images"
                 />
               </label>
-
               <GifPicker onGifSelect={handleGifSelect} />
               <EmojiPicker
                 onEmojiSelect={onEmojiSelect}
