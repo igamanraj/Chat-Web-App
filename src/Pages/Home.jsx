@@ -7,7 +7,6 @@ import LinkPreview from "../assets/components/LinkPreview/LinkPreview";
 import EmojiPicker from "../assets/components/EmojiPicker/Emoji";
 import GifPicker from "../assets/components/GIFPicker/GIF";
 import SyncLoader from "react-spinners/SyncLoader";
-import VoiceRecorder from "../assets/components/VoiceRecorder/VoiceRecorder";
 import { io } from "socket.io-client";
 import { IoImageOutline } from "react-icons/io5";
 import { VscChromeClose } from "react-icons/vsc";
