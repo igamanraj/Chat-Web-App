@@ -14,6 +14,8 @@ import { Tooltip } from "react-tooltip";
 import { ClipLoader } from "react-spinners";
 import { IoMoon } from "react-icons/io5";
 import { MdOutlineLightMode } from "react-icons/md";
+import { IoMdSend } from "react-icons/io";
+import VoiceRecorder from "../assets/components/VoiceRecorder/VoiceRecorder";
 
 // Backend connection configuration Sets up Socket.io connection to the backend server
 const BACKEND_URL = import.meta.env.VITE_REACT_BACKEND_URL;
@@ -303,7 +305,35 @@ const Home = () => {
   // Message Component
   const Message = ({ message }) => {
     const showReactions = activeReactionMessageId === message.id;
+    const audioRef = useRef(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [currentTime, setCurrentTime] = useState(0);
     let timeoutId;
+
+    const handlePlayPause = () => {
+      if (audioRef.current) {
+        if (isPlaying) {
+          audioRef.current.pause();
+        } else {
+          audioRef.current.play();
+        }
+        setIsPlaying(!isPlaying);
+      }
+    };
+
+    useEffect(() => {
+      if (audioRef.current) {
+        audioRef.current.onended = () => {
+          setIsPlaying(false);
+          setCurrentTime(0);
+        };
+
+        audioRef.current.ontimeupdate = () => {
+          setCurrentTime(Math.floor(audioRef.current.currentTime));
+        };
+      }
+    }, []);
+
     // Handle right-click context menu for reactions
     const handleContextMenu = (e) => {
       e.preventDefault();
@@ -341,8 +371,8 @@ const Home = () => {
               ? "my-message bg-[#1E2939] text-white self-end"
               : "self-end"
             : message.text
-            ? "other-message bg-gray-700 text-white self-start"
-            : "self-start"
+              ? "other-message bg-gray-700 text-white self-start"
+              : "self-start"
         }`}
         onContextMenu={handleContextMenu}
         onTouchStart={handleTouchStart}
@@ -366,6 +396,61 @@ const Home = () => {
               alt="GIF"
               className="w-48 h-auto rounded-md"
             />
+          )}
+          {message.type === "audio" && (
+            <div className={`flex items-center gap-3 min-w-[180px] max-w-[280px] ${
+              message.me ? 'bg-[#1E2939]' : 'bg-gray-700'
+            } p-3 rounded-lg`}>
+              <button 
+                onClick={handlePlayPause}
+                className={`text-white hover:text-gray-300 transition-all duration-200 ${
+                  isPlaying ? 'scale-110' : ''
+                }`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
+                  {isPlaying ? (
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  ) : (
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                  )}
+                </svg>
+              </button>
+              <div className="flex-1 flex flex-col gap-1">
+                <div className="flex items-center gap-[2px]">
+                  {[...Array(30)].map((_, i) => (
+                    <div
+                      key={i}
+                      className={`w-[3px] rounded-full transition-all duration-150 ${
+                        isPlaying ? 'bg-white' : 'bg-white/40'
+                      }`}
+                      style={{
+                        height: `${
+                          isPlaying 
+                            ? 4 + Math.abs(Math.sin((Date.now() / 200) + i * 0.3)) * 12
+                            : 4 + Math.abs(Math.sin(i * 0.3)) * 12
+                        }px`,
+                        opacity: isPlaying ? '1' : '0.4',
+                        transform: isPlaying ? 'scaleY(1.1)' : 'scaleY(1)',
+                        transition: 'all 0.1s ease'
+                      }}
+                    />
+                  ))}
+                </div>
+                <span className="text-xs text-white/60">
+                  {formatDuration(currentTime)} / {audioRef.current?.duration ? formatDuration(Math.floor(audioRef.current.duration)) : '0:00'}
+                </span>
+              </div>
+              <audio 
+                ref={audioRef}
+                className="hidden" 
+                src={message.content}
+                onEnded={() => {
+                  setIsPlaying(false);
+                  setCurrentTime(0);
+                }}
+                preload="metadata"
+              />
+            </div>
           )}
 
           <span className="timestamp">{message.timestamp}</span>
@@ -513,7 +598,7 @@ const Home = () => {
           if (item.type.indexOf("image") !== -1) {
             const file = item.getAsFile();
             const reader = new FileReader();
-            reader.onload = (e) => setSelectedImage(e.target.result);
+            reader.onloadend = () => setSelectedImage(e.target.result);
             reader.readAsDataURL(file);
           }
         }
@@ -524,9 +609,63 @@ const Home = () => {
     return () => document.removeEventListener("paste", handlePaste);
   }, []);
 
-  // Function to handle voice message received
-  const handleVoiceMessage = (audioUrl) => {
-    setMessages((prev) => [...prev, { me: true, audio: audioUrl }]);
+  // Voice Message Handling
+  useEffect(() => {
+    socket.on("receiveVoiceMessage", (messageData) => {
+      setMessages((prev) => [...prev, {
+        id: messageData.messageId,
+        type: "audio",
+        content: messageData.url,
+        me: false,
+        senderId: messageData.senderId,
+        timestamp: new Date(messageData.timestamp).toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        }),
+        reactions: {}
+      }]);
+    });
+
+    return () => {
+      socket.off("receiveVoiceMessage");
+    };
+  }, []);
+
+  const sendVoiceMessage = async (audioBlob) => {
+    if (!audioBlob) return console.error("❌ No audio blob to send!");
+
+    const reader = new FileReader();
+    reader.readAsDataURL(audioBlob);
+    reader.onloadend = () => {
+      socket.emit("sendVoiceMessage", reader.result, (response) => {
+        if (response.success) {
+          // console.log("✅ Voice message uploaded:", response.messageData.url);
+          setMessages((prev) => [...prev, {
+            id: response.messageData.messageId,
+            type: "audio",
+            content: response.messageData.url,
+            me: true,
+            senderId: socket.id,
+            timestamp: new Date(response.messageData.timestamp).toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            }),
+            reactions: {}
+          }]);
+        } else {
+          console.error("❌ Failed to upload voice message:", response.error);
+        }
+      });
+    };
+  };
+
+  // Add this helper function near your other utility functions
+  const formatDuration = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -614,7 +753,6 @@ const Home = () => {
               className="hidden"
               id="fileInput"
             />
-
             <div className="flex-1 relative">
               <input
                 type="text"
@@ -637,12 +775,16 @@ const Home = () => {
                   content="Attach Images"
                 />
               </label>
+
               <GifPicker onGifSelect={handleGifSelect} />
               <EmojiPicker
                 onEmojiSelect={onEmojiSelect}
                 showPicker={showEmojiPicker}
                 togglePicker={() => setShowEmojiPicker(!showEmojiPicker)}
               />
+            </div>
+            <div>
+              <VoiceRecorder onSendVoice={sendVoiceMessage} />
             </div>
 
             {selectedImage && (
@@ -671,7 +813,7 @@ const Home = () => {
             onClick={sendMessage}
             className="px-3 py-2 md:px-4 text-sm md:text-base bg-blue-600 text-white rounded cursor-pointer hover:bg-blue-700"
           >
-            Send
+            <IoMdSend className="text-xl" />
           </button>
         </div>
       </footer>
