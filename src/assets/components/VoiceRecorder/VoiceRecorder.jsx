@@ -57,13 +57,11 @@ const VoiceRecorder = ({ onSendVoice }) => {
       setAudioBlob(null);
       setRecordingDuration(0);
 
-      // Start duration counter
       const interval = setInterval(() => {
         setRecordingDuration(prev => prev + 1);
       }, 1000);
       setDurationInterval(interval);
 
-      // Gentle vibration feedback for start
       if (navigator.vibrate) {
         navigator.vibrate(50);
       }
@@ -85,12 +83,10 @@ const VoiceRecorder = ({ onSendVoice }) => {
           setAudioStream(null);
         }
 
-        // Clear duration counter
         if (durationInterval) {
           clearInterval(durationInterval);
         }
 
-        // Gentle vibration feedback for stop
         if (navigator.vibrate) {
           navigator.vibrate(50);
         }
@@ -105,11 +101,28 @@ const VoiceRecorder = ({ onSendVoice }) => {
   };
 
   const handleDelete = () => {
+    // Stop any ongoing recording first
+    if (recording) {
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+      }
+      if (audioStream) {
+        audioStream.getTracks().forEach(track => track.stop());
+      }
+      if (durationInterval) {
+        clearInterval(durationInterval);
+      }
+    }
+
+    // Reset all states
     setAudioChunks([]);
     setRecordingComplete(false);
     setAudioBlob(null);
     setRecordingDuration(0);
     setClickMode(false);
+    setRecording(false);
+    setMediaRecorder(null);
+    setAudioStream(null);
   };
 
   const handleSend = () => {
@@ -119,23 +132,34 @@ const VoiceRecorder = ({ onSendVoice }) => {
     }
   };
 
-  const handleMouseDown = () => {
+  const handleMouseDown = (e) => {
+    // Prevent double triggering on touch devices
+    if (e.type === 'mousedown' && window.TouchEvent && e.nativeEvent instanceof TouchEvent) return;
+    
     setIsHolding(true);
-    if (!clickMode) {
+    if (!clickMode && !recordingComplete && !recording) {
       startRecording();
     }
   };
 
-  const handleMouseUp = () => {
-    setIsHolding(false);
-    if (!clickMode && recording) {
-      stopRecording();
+  const handleMouseUp = (e) => {
+    // Prevent double triggering on touch devices
+    if (e.type === 'mouseup' && window.TouchEvent && e.nativeEvent instanceof TouchEvent) return;
+    
+    if (isHolding) {
+      setIsHolding(false);
+      if (!clickMode && recording) {
+        stopRecording();
+      }
     }
   };
 
-  const handleClick = () => {
-    if (!isHolding) {
-      if (!recording && !recordingComplete) {
+  const handleClick = (e) => {
+    // Prevent click handling for touch events
+    if (window.TouchEvent && e.nativeEvent instanceof TouchEvent) return;
+    
+    if (!isHolding && !recordingComplete) {
+      if (!recording) {
         setClickMode(true);
         startRecording();
       } else if (recording && clickMode) {
@@ -146,48 +170,48 @@ const VoiceRecorder = ({ onSendVoice }) => {
 
   return (
     <div className="relative">
-    {/* Recording controls overlay */}
-    {(recording || recordingComplete) && (
-      <div className="absolute -top-[140px] right-0 flex flex-col items-center bg-[#1E2939] rounded-4xl p-3 min-w-[40px] shadow-lg backdrop-blur-sm bg-opacity-95">
-        <button
-          onClick={handleSend}
-          className="p-2 hover:bg-gray-700/50 rounded-xl transition-colors duration-200"
-        >
-          <IoSend className="text-xl text-blue-500" />
-        </button>
-        <div className="text-white text-sm my-2 font-medium">
-          {formatDuration(recordingDuration)}
+      {/* Recording controls overlay */}
+      {(recording || recordingComplete) && (
+        <div className="absolute -top-[140px] right-0 flex flex-col items-center bg-[#1E2939] rounded-2xl p-3 min-w-[40px] shadow-lg backdrop-blur-sm bg-opacity-95">
+          <button
+            onClick={handleSend}
+            className="p-2 hover:bg-gray-700/50 rounded-xl transition-colors duration-200"
+          >
+            <IoSend className="text-xl text-blue-500" />
+          </button>
+          <div className="text-white text-sm my-2 font-medium">
+            {formatDuration(recordingDuration)}
+          </div>
+          <button
+            onClick={handleDelete}
+            className="p-2 hover:bg-gray-700/50 rounded-xl transition-colors duration-200"
+          >
+            <IoTrash className="text-xl text-red-500" />
+          </button>
         </div>
-        <button
-          onClick={handleDelete}
-          className="p-2 hover:bg-gray-700/50 rounded-xl transition-colors duration-200"
-        >
-          <IoTrash className="text-xl text-red-500" />
-        </button>
-      </div>
-    )}
-    
-    {/* Mic button */}
-    <button
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
-      onTouchStart={handleMouseDown}
-      onTouchEnd={handleMouseUp}
-      onClick={handleClick}
-      className={`p-2 rounded-full transition-all duration-500 ease-in-out transform ${
-        recording 
-          ? 'bg-red-500 scale-110 shadow-lg shadow-red-500/50 animate-[pulse_2s_ease-in-out_infinite]' 
-          : 'bg-blue-100 hover:bg-blue-200 hover:scale-105'
-      }`}
-    >
-      {recording ? (
-        <IoMdMicOff className="text-xl text-white transition-transform duration-300 ease-in-out" />
-      ) : (
-        <IoMdMic className="text-xl text-blue-500 transition-transform duration-300 ease-in-out" />
       )}
-    </button>
-  </div>
-);
+      
+      {/* Mic button */}
+      <button
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onTouchStart={handleMouseDown}
+        onTouchEnd={handleMouseUp}
+        onClick={handleClick}
+        className={`p-2 rounded-full transition-all duration-500 ease-in-out transform ${
+          recording 
+            ? 'bg-red-500 scale-110 shadow-lg shadow-red-500/50 animate-[pulse_2s_ease-in-out_infinite]' 
+            : 'bg-blue-100 hover:bg-blue-200 hover:scale-105'
+        }`}
+      >
+        {recording ? (
+          <IoMdMicOff className="text-xl text-white transition-transform duration-300 ease-in-out" />
+        ) : (
+          <IoMdMic className="text-xl text-blue-500 transition-transform duration-300 ease-in-out" />
+        )}
+      </button>
+    </div>
+  );
 };
 
 export default VoiceRecorder; 
